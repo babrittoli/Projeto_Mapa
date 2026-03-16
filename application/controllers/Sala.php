@@ -9,6 +9,10 @@ class Sala extends CI_Controller {
 // "extends CI_Controller" significa que ela herda funcionalidades do controlador principal do CodeIgniter. (Herança)
 // Ou seja, esta classe será um Controller da aplicação.
 
+
+// Declarando para o Intelephense reconhecer o model
+public M_sala $M_sala; 
+
     /*
     Validação dos tipos de retornos nas validações (Código de erro)
     1 - Operação realizada no banco de dados com sucesso (Inserção, Alteração, Consulta ou Exclusão)
@@ -73,6 +77,8 @@ class Sala extends CI_Controller {
     // função para inserir dados da sala
     public function inserir() {
 
+        $this->load->helper('geral_helper'); // para o codigo puxar a funcao 
+
         $erros = []; // Cria um array para armazenar possíveis erros durante o processo
         $sucesso = false; // Variável booleana que indicará se a operação foi bem-sucedida ou nao 
 
@@ -99,7 +105,7 @@ class Sala extends CI_Controller {
                 // adiciona um erro no array de erros
                 $erros[] = [
                     'codigo' => 99,
-                    'msp' => 'Campos inexistentes ou incorretos no FrontEnd.'
+                    'msg' => 'Campos inexistentes ou incorretos no FrontEnd.'
                 ];
 
             } else {
