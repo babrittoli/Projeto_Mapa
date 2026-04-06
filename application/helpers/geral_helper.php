@@ -167,6 +167,36 @@
 
         // Valor default da variável retorno caso não ocorra erro
         return array('codigoHelper' => 0, 'msg' => 'Validação correta.'); // Retorna sucesso
-    }    
+    }      
+
+        
+    // Função para verificar se datas ou horários iniciais são maiores entre eles
     
+    function compararDataHora($valorInicial, $valorFinal, $tipo) {
+        // Passamos a string para hora
+        $valorInicial = strtotime($valorInicial); // Converte a string de data/hora inicial em timestamp Unix
+        $valorFinal   = strtotime($valorFinal);   // Converte a string de data/hora final em timestamp Unix
+
+        if ($valorInicial != '' && $valorFinal != '') { // Verifica se ambos os valores foram convertidos corretamente
+
+            if ($valorInicial > $valorFinal) { // Verifica se o valor inicial é maior que o final (inválido)
+
+                switch ($tipo) { // Verifica o tipo para retornar a mensagem correta
+
+                    case 'hora': // Se o tipo for hora
+                        return array('codigoHelper' => 13, 'msg' => 'Hora Final menor que a Hora Inicial.');
+                        break;
+
+                    case 'data': // Se o tipo for data
+                        return array('codigoHelper' => 14, 'msg' => 'Data Final menor que a Data Inicial.');
+                        break;
+
+                    default: // Se o tipo não for reconhecido
+                        return array('codigoHelper' => 97, 'msg' => 'Tipo de verificação não definida.');
+                }
+            }
+        }
+        // Valor default da variável $retorno caso não ocorra erro
+        return array('codigoHelper' => 0, 'msg' => 'Validação correta.'); // Retorna sucesso
+    }
 ?>

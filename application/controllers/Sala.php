@@ -342,6 +342,7 @@ public M_sala $M_sala;
 
     public function alterar() {
     // Atributos para controlar o status de nosso método
+    $this->load->helper('geral_helper');
     $erros = []; // Array que armazena os erros encontrados
     $sucesso = false; // Variável que indica se a operação foi bem-sucedida
 
@@ -451,6 +452,7 @@ public M_sala $M_sala;
 
     public function desativar() {
         // Atributos para controlar o status de nosso método
+           $this->load->helper('geral_helper');
         $erros = []; // Array que armazena os erros encontrados
         $sucesso = false; // Variável que indica se a operação foi bem-sucedida
 
@@ -463,7 +465,7 @@ public M_sala $M_sala;
                 "codigo" => '0' // Define apenas o campo esperado do frontend
             ];
 
-            if (verificarParam($resultado, $lista) != 1) { // Verifica se os parâmetros estão corretos
+            if (verificarParametros($resultado, $lista) != 1) { // Verifica se os parâmetros estão corretos
                 // Validar vindos de forma correta do frontend (Helper)
                 $erros[] = ['codigo' => 99, 'msg' => 'Campos inexistentes ou incorretos no FrontEnd.'];
             } else {

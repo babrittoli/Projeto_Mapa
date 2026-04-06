@@ -164,5 +164,114 @@ class M_sala extends CI_Model
         // acima pela estrutura de decisão if
         return $dados; // Retorna o resultado final da função
     }
+
+    public function alterar($codigo, $descricao, $andar, $capacidade) {
+        try {
+
+            // Verifico se a sala já está cadastrada
+            $retornoConsulta = $this->consultaSala($codigo); // Consulta se a sala existe pelo código
+
+            if ($retornoConsulta['codigo'] == 10) { // Se a sala foi encontrada (código 10 = existe)
+
+                // Inicio a query para atualização
+                $query = "update salas set "; // Começa a montar o UPDATE dinamicamente
+
+                // Vamos comparar os items - adiciona apenas os campos que foram enviados
+                if ($descricao !== '') { // Se descrição não está vazia
+                    $query .= "descricao = '$descricao', "; // Adiciona descrição na query
+                }
+
+                if ($andar !== '') { // Se andar não está vazio
+                    $query .= "andar = $andar, "; // Adiciona andar na query
+                }
+
+                if ($capacidade !== '') { // Se capacidade não está vazia
+                    $query .= "capacidade = $capacidade, "; // Adiciona capacidade na query
+                }
+
+                // Termino a concatenação da query
+                $queryFinal = rtrim($query, ", ") . " where codigo = $codigo"; 
+                // Remove a vírgula final e adiciona o WHERE com o código
+
+                // Executo a Query de atualização dos dados
+                $this->db->query($queryFinal);
+
+                // Verificar se a atualização ocorreu com sucesso
+                if ($this->db->affected_rows() > 0) { // Se alguma linha foi afetada
+                    $dados = array(
+                        'codigo' => 1, // Código de sucesso
+                        'msg'    => 'Sala atualizada corretamente.'
+                    );
+                } else {
+                    $dados = array(
+                        'codigo' => 8, // Código de erro na atualização
+                        'msg'    => 'Houve algum problema na atualização na tabela de sala.'
+                    );
+                }
+
+            } else { // Se a sala não foi encontrada
+                $dados = array(
+                    'codigo' => $retornoConsulta['codigo'], // Repassa o código de erro da consulta
+                    'msg'    => $retornoConsulta['msg']     // Repassa a mensagem de erro
+                );
+            }
+
+        } catch (Exception $e) { // Captura qualquer exceção inesperada
+            $dados = array(
+                'codigo' => 00, // Código genérico de erro
+                'msg'    => 'ATENÇÃO: O seguinte erro aconteceu -> ' . $e->getMessage()
+            );
+        }
+
+        // Envia o array $dados com as informações tratadas
+        // acima pela estrutura de decisão if
+        return $dados; // Retorna o resultado para o controller
+
+    } // fecha o método alterar
+
+    public function desativar($codigo) {
+        try {
+
+            // Verifico se a sala já está cadastrada
+            $retornoConsulta = $this->consultaSala($codigo); // Consulta se a sala existe pelo código
+
+            if ($retornoConsulta['codigo'] == 10) { // Se a sala foi encontrada (código 10 = existe)
+
+                // Query de atualização dos dados
+                $this->db->query("update salas set estatus = 'D'
+                                  where codigo = $codigo"); // Atualiza o estatus para 'D' (Desativada)
+
+                // Verificar se a atualização ocorreu com sucesso
+                if ($this->db->affected_rows() > 0) { // Se alguma linha foi afetada
+                    $dados = array(
+                        'codigo' => 1, // Código de sucesso
+                        'msg'    => 'Sala DESATIVADA corretamente.'
+                    );
+                } else {
+                    $dados = array(
+                        'codigo' => 8, // Código de erro na desativação
+                        'msg'    => 'Houve algum problema na DESATIVAÇÃO da Sala.'
+                    );
+                }
+
+            } else { // Se a sala não foi encontrada
+                $dados = array(
+                    'codigo' => $retornoConsulta['codigo'], // Repassa o código de erro da consulta
+                    'msg'    => $retornoConsulta['msg']     // Repassa a mensagem de erro
+                );
+            }
+
+        } catch (Exception $e) { // Captura qualquer exceção inesperada
+            $dados = array(
+                'codigo' => 00, // Código genérico de erro
+                'msg'    => 'ATENÇÃO: O seguinte erro aconteceu -> ' . $e->getMessage()
+            );
+        }
+
+        // Envia o array $dados com as informações tratadas
+        // acima pela estrutura de decisão if
+        return $dados; // Retorna o resultado para o controller
+
+    } // fecha o método desativar
 }
 ?>
