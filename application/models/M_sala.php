@@ -9,6 +9,7 @@ class M_sala extends CI_Model
     TABELA DE CÓDIGOS DE RETORNO:
     0 - Erro crítico (Exceção)
     1 - Sucesso total
+    4- conteúdo não inteiro
     8 - Falha na operação (Banco de dados não alterado)
     9 - Registro existe mas está desativado
     10 - Registro já existe (Duplicidade)
@@ -109,6 +110,59 @@ class M_sala extends CI_Model
 
         // Retorna o resultado da análise para a função que a chamou
         return $dados;
+    }
+
+    public function consultar($codigo, $descricao, $andar, $capacidade) { // Define o método consultar com os parâmetros recebidos
+
+        try { // Início do bloco try para tratar possíveis erros
+
+            // Query base para consultar dados de acordo com os parâmetros passados
+            $sql = "select * from salas where estatus = ''"; // Inicia a query filtrando pelo status
+
+            if (trim($codigo) != '') { // Verifica se o código não está vazio (remove espaços antes)
+                $sql = $sql . " and codigo = '$codigo' "; // Adiciona filtro pelo código na query
+            }
+
+            if (trim($andar) != '') { // Verifica se o andar não está vazio
+                $sql = $sql . " and andar = '$andar' "; // Adiciona filtro pelo andar
+            }
+
+            if (trim($descricao) != '') { // Verifica se a descrição não está vazia
+                $sql = $sql . " and descricao like '%$descricao%' "; // Adiciona filtro usando LIKE (busca parcial)
+            }
+
+            if (trim($capacidade) != '') { // Verifica se a capacidade não está vazia
+                $sql = $sql . " and capacidade = '$capacidade' "; // Adiciona filtro pela capacidade
+            }
+
+            $sql = $sql . " order by codigo "; // Ordena o resultado pelo campo código
+
+            $retorno = $this->db->query($sql); // Executa a query no banco de dados
+
+            // Verificar se a consulta ocorreu com sucesso
+            if ($retorno->num_rows() > 0) { // Verifica se retornou algum registro
+                $dados = array(
+                    'codigo' => 1, // Código de sucesso
+                    'msg' => 'Consulta efetuada com sucesso.', // Mensagem de sucesso
+                    'dados' => $retorno->result() // Dados retornados da consulta
+                );
+            } else { // Caso não tenha retornado resultados
+                $dados = array(
+                    'codigo' => 11, // Código indicando nenhum registro encontrado
+                    'msg' => 'Sala não encontrada.' // Mensagem informando que não encontrou dados
+                );
+            }
+
+        } catch (Exception $e) { // Captura erros/exceções durante a execução
+            $dados = array(
+                'codigo' => 0, // Código genérico de erro
+                'msg' => 'ATENÇÃO: O seguinte erro aconteceu -> ' . $e->getMessage() // Mensagem com detalhe do erro
+            );
+        }
+
+        // Envia o array $dados com as informações tratadas
+        // acima pela estrutura de decisão if
+        return $dados; // Retorna o resultado final da função
     }
 }
 ?>

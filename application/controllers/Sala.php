@@ -22,6 +22,7 @@ public M_sala $M_sala;
     5 - Conteúdo não é um texto
     6 - Data em formato inválido
     7 - Hora em formato inválido
+    12 - Na atualização, pelo menos 1 atributo deve ser passado. 
     99 - Parâmetros passados do front não correspondem ao método
     */
 
@@ -214,9 +215,12 @@ public M_sala $M_sala;
            
             echo json_encode($retorno);  // Converte o array PHP em formato JSON permitindo que o frontend receba os dados nas variaveis privadas
     }
-
-    public function consultar() { // Declara o método consultar (provavelmente de um controller)
+    
+    
+    // Declarando a função consultar 
+    public function consultar() { 
     // Atributos para controlar o status do método
+    $this->load->helper('geral_helper');
     $erros = []; // Array que vai armazenar possíveis erros
     $sucesso = false; // Variável de controle para indicar se deu tudo certo
 
@@ -239,26 +243,284 @@ public M_sala $M_sala;
             } else {
 
                 // Validar campos quanto ao tipo de dado e tamanho (Helper)
-
                 $retornoCodigo = validarDadosConsulta($resultado->codigo, 'int'); 
                 // Valida se "codigo" é um número inteiro válido
-
                 $retornoDescricao = validarDadosConsulta($resultado->descricao, 'string'); 
                 // Valida se "descricao" é uma string válida (não vazia)
-
                 $retornoAndar = validarDadosConsulta($resultado->andar, 'int'); 
                 // Valida se "andar" é um número inteiro válido
-
                 $retornoCapacidade = validarDadosConsulta($resultado->capacidade, 'int'); 
                 // Valida se "capacidade" é um número inteiro válido
-            }
+            
 
-        } catch (Exception $e) { // Captura qualquer erro/exceção durante a execução
-            $erros[] = ['codigo' => 500, 'msg' => $e->getMessage()]; 
-            // Armazena o erro com a mensagem da exceção
+                if ($retornoCodigo['codigoHelper'] != 0) { // Verifica se houve erro na validação do campo "codigo"
+                    $erros[] = [ // Adiciona o erro no array de erros
+                        'codigo' => $retornoCodigo['codigoHelper'], // Código do erro retornado pelo helper
+                        'campo' => 'Codigo', // Nome do campo com erro
+                        'msg' => $retornoCodigo['msg'] // Mensagem de erro
+                    ];
+                }
+
+                if ($retornoDescricao['codigoHelper'] != 0) { // Verifica erro na validação de "descricao"
+                    $erros[] = [
+                        'codigo' => $retornoDescricao['codigoHelper'], // Código do erro
+                        'campo' => 'Descrição', // Nome do campo
+                        'msg' => $retornoDescricao['msg'] // Mensagem do erro
+                    ];
+                }
+
+                if ($retornoAndar['codigoHelper'] != 0) { // Verifica erro na validação de "andar"
+                    $erros[] = [
+                        'codigo' => $retornoAndar['codigoHelper'], // Código do erro
+                        'campo' => 'Andar', // Nome do campo
+                        'msg' => $retornoAndar['msg'] // Mensagem do erro
+                    ];
+                }
+
+                if ($retornoCapacidade['codigoHelper'] != 0) { // Verifica erro na validação de "capacidade"
+                    $erros[] = [
+                        'codigo' => $retornoCapacidade['codigoHelper'], // Código do erro
+                        'campo' => 'Capacidade', // Nome do campo
+                        'msg' => $retornoCapacidade['msg'] // Mensagem do erro
+                    ];
+                }
+
+                // Se não encontrar erros
+                if (empty($erros)) { // Verifica se o array de erros está vazio
+
+                    $this->setCodigo($resultado->codigo); // Define o código no objeto atual
+                    $this->setDescricao($resultado->descricao); // Define a descrição
+                    $this->setAndar($resultado->andar); // Define o andar
+                    $this->setCapacidade($resultado->capacidade); // Define a capacidade
+
+                    $this->load->model("M_sala"); // Carrega o model responsável pelo banco
+
+                    $resBanco = $this->M_sala->consultar( // Chama o método consultar no model
+                        $this->getCodigo(), // Passa o código
+                        $this->getDescricao(), // Passa a descrição
+                        $this->getAndar(), // Passa o andar
+                        $this->getCapacidade() // Passa a capacidade
+                    );
+
+                    if ($resBanco['codigo'] == 1) { // Verifica se a operação no banco foi bem-sucedida
+                        $sucesso = true; // Marca como sucesso
+                    } else {
+                        // Captura erro do banco
+                        $erros[] = [
+                            'codigo' => $resBanco['codigo'], // Código de erro retornado pelo banco
+                            'msg' => $resBanco['msg'] // Mensagem de erro
+                        ];
+                    }
+                }   
+            }  
+        } catch (Exception $e) { 
+            $erros[] = [
+                'codigo' => 0, // Código genérico de erro
+                'msg' => 'Erro inesperado: ' . $e->getMessage() // Mensagem da exceção
+            ];
         }
-}
-}   
+
+            // Monta retorno único
+            if ($sucesso == true) { // Se a operação foi bem-sucedida
+                $retorno = [
+                    'sucesso' => $sucesso, // true
+                    'codigo' => $resBanco['codigo'], // Código retornado do banco
+                    'msg' => $resBanco['msg'], // Mensagem do banco
+                    'dados' => $resBanco['dados'] // Dados retornados da consulta
+                ];
+            } else {
+                $retorno = [
+                    'sucesso' => $sucesso, // false
+                    'erros' => $erros // Lista de erros encontrados
+                ];
+        }
+
+        // Transforma o array em JSON
+        echo json_encode($retorno); // Retorna a resposta em formato JSON para o frontend
+                
+    }   
+
+    public function alterar() {
+    // Atributos para controlar o status de nosso método
+    $erros = []; // Array que armazena os erros encontrados
+    $sucesso = false; // Variável que indica se a operação foi bem-sucedida
+
+    try { // Início do bloco try para capturar exceções
+
+        $json = file_get_contents('php://input'); // Lê o corpo da requisição enviado pelo frontend em JSON
+        $resultado = json_decode($json); // Converte o JSON recebido em um objeto PHP
+
+        $lista = [ // Define os campos esperados vindos do frontend
+            "codigo"     => '0',
+            "descricao"  => '0',
+            "andar"      => '0',
+            "capacidade" => '0'
+        ];
+
+        if (verificarParametros($resultado, $lista) != 1) { // Verifica se os parâmetros recebidos estão corretos
+            // Validar vindos de forma correta do frontend (Helper)
+            $erros[] = ['codigo' => 99, 'msg' => 'Campos inexistentes ou incorretos no FrontEnd.']; 
+            // Adiciona erro caso os parâmetros estejam errados ou faltando
+        } else {
+                        // Pelo menos um dos três parâmetros precisam ter dados para acontecer a atualização
+                if(trim($resultado->descricao) == '' && trim($resultado->andar) == '' &&
+                    trim($resultado->capacidade) == '') {
+                    $erros[] = ['codigo' => 12,
+                                'msg' => 'Pelo menos um parâmetro precisa ser passado para atualização'];
+
+                } else {
+                    // Validar campos quanto ao tipo de dado e tamanho (Helper)
+                    $retornoCodigo    = validarDados($resultado->codigo, 'int', true); // Valida código como inteiro obrigatório
+                    $retornoDescricao = validarDadosConsulta($resultado->descricao, 'string'); // Valida descrição como string opcional
+                    $retornoAndar     = validarDadosConsulta($resultado->andar, 'int'); // Valida andar como inteiro opcional
+                    $retornoCapacidade = validarDadosConsulta($resultado->capacidade, 'int'); // Valida capacidade como inteiro opcional
+
+                    if($retornoCodigo['codigoHelper'] != 0) { // Verifica erro na validação do código
+                        $erros[] = ['codigo' => $retornoCodigo['codigoHelper'],
+                                    'campo'  => 'Codigo',
+                                    'msg'    => $retornoCodigo['msg']];
+                    }
+
+                    if($retornoDescricao['codigoHelper'] != 0) { // Verifica erro na validação da descrição
+                        $erros[] = ['codigo' => $retornoDescricao['codigoHelper'],
+                                    'campo'  => 'Descrição',
+                                    'msg'    => $retornoDescricao['msg']];
+                    }
+
+                    if($retornoAndar['codigoHelper'] != 0) { // Verifica erro na validação do andar
+                        $erros[] = ['codigo' => $retornoAndar['codigoHelper'],
+                                    'campo'  => 'Andar',
+                                    'msg'    => $retornoAndar['msg']];
+                    }
+
+                    if($retornoCapacidade['codigoHelper'] != 0) { // Verifica erro na validação da capacidade
+                        $erros[] = ['codigo' => $retornoCapacidade['codigoHelper'],
+                                    'campo'  => 'Capacidade',
+                                    'msg'    => $retornoCapacidade['msg']];
+                    } 
+
+                    // Se não encontrar erros
+                    if (empty($erros)) { // Verifica se o array de erros está vazio
+                        $this->setCodigo($resultado->codigo);     // Define o código no objeto atual
+                        $this->setDescricao($resultado->descricao); // Define a descrição
+                        $this->setAndar($resultado->andar);         // Define o andar
+                        $this->setCapacidade($resultado->capacidade); // Define a capacidade
+
+                        $this->load->model('M_sala'); // Carrega o model responsável pelo banco
+
+                        $resBanco = $this->M_sala->alterar( // Chama o método alterar no model
+                            $this->getCodigo(),      // Passa o código
+                            $this->getDescricao(),   // Passa a descrição
+                            $this->getAndar(),       // Passa o andar
+                            $this->getCapacidade()   // Passa a capacidade
+                        );
+
+                    if ($resBanco['codigo'] == 1) { // Verifica se a operação no banco foi bem-sucedida
+                        $sucesso = true; // Marca como sucesso
+                    } else {
+                        // Captura erro do banco
+                        $erros[] = [
+                            'codigo' => $resBanco['codigo'], // Código de erro retornado pelo banco
+                            'msg'    => $resBanco['msg']     // Mensagem de erro
+                        ];
+                    }
+                } // fecha o empty($erros)
+            }
+        } 
+    } catch (Exception $e) { // Captura qualquer exceção inesperada
+                $erros[] = ['codigo' => 0, 'msg' => 'Erro inesperado: ' . $e->getMessage()];
+    } // fecha o catch 
+// Monta retorno único
+    if ($sucesso == true) { // Se a operação foi bem-sucedida
+        $retorno = [
+            'sucesso' => $sucesso,          // true
+            'codigo'  => $resBanco['codigo'], // Código retornado do banco
+            'msg'     => $resBanco['msg']     // Mensagem do banco
+        ];
+    } else {
+        $retorno = [
+            'sucesso' => $sucesso, // false
+            'erros'   => $erros    // Lista de erros encontrados
+        ];
+    }
+    // Transforma o array em JSON
+    echo json_encode($retorno); // Retorna a resposta em formato JSON para o frontend
+
+    // fecha o método alterar()       
+    }
+
+    public function desativar() {
+        // Atributos para controlar o status de nosso método
+        $erros = []; // Array que armazena os erros encontrados
+        $sucesso = false; // Variável que indica se a operação foi bem-sucedida
+
+        try { // Início do bloco try para capturar exceções
+
+            $json = file_get_contents('php://input'); // Lê o corpo da requisição enviado pelo frontend
+            $resultado = json_decode($json); // Converte o JSON recebido em um objeto PHP
+
+            $lista = [
+                "codigo" => '0' // Define apenas o campo esperado do frontend
+            ];
+
+            if (verificarParam($resultado, $lista) != 1) { // Verifica se os parâmetros estão corretos
+                // Validar vindos de forma correta do frontend (Helper)
+                $erros[] = ['codigo' => 99, 'msg' => 'Campos inexistentes ou incorretos no FrontEnd.'];
+            } else {
+
+                // Validar código quanto ao tipo de dado e tamanho (Helper)
+                $retornoCodigo = validarDados($resultado->codigo, 'int', true); // Valida se o código é inteiro obrigatório
+
+                if($retornoCodigo['codigoHelper'] != 0) { // Verifica se houve erro na validação do código
+                    $erros[] = ['codigo' => $retornoCodigo['codigoHelper'],
+                                'campo'  => 'Codigo',
+                                'msg'    => $retornoCodigo['msg']];
+                }
+
+                // Se não encontrar erros
+                if (empty($erros)) { // Verifica se o array de erros está vazio
+
+                    $this->setCodigo($resultado->codigo); // Define o código no objeto atual
+
+                    $this->load->model('M_sala'); // Carrega o model responsável pelo banco
+                    $resBanco = $this->M_sala->desativar($this->getCodigo()); // Chama o método desativar passando apenas o código
+
+                    if ($resBanco['codigo'] == 1) { // Verifica se a operação no banco foi bem-sucedida
+                        $sucesso = true; // Marca como sucesso
+                    } else {
+                        // Captura erro do banco
+                        $erros[] = [
+                            'codigo' => $resBanco['codigo'], // Código de erro retornado pelo banco
+                            'msg'    => $resBanco['msg']     // Mensagem de erro
+                        ];
+                    }
+                }
+
+            }
+        } catch (Exception $e) { // Captura qualquer exceção inesperada
+            $erros[] = ['codigo' => 0, 'msg' => 'Erro inesperado: ' . $e->getMessage()];
+        }
+
+        // Monta retorno único
+        if ($sucesso == true) { // Se a operação foi bem-sucedida
+            $retorno = [
+                'sucesso' => $sucesso,           // true
+                'codigo'  => $resBanco['codigo'], // Código retornado do banco
+                'msg'     => $resBanco['msg']     // Mensagem do banco
+            ];
+        } else {
+            $retorno = [
+                'sucesso' => $sucesso, // false
+                'erros'   => $erros    // Lista de erros encontrados
+            ];
+        }
+
+        // Transforma o array em JSON
+        echo json_encode($retorno); // Retorna a resposta em formato JSON para o frontend
+
+    } // fechando a função desativar()
+
+} // fecha a classe Sala
 ?>
 
 
