@@ -77,7 +77,7 @@ public M_sala $M_sala;
     // função para inserir dados da sala
     public function inserir() {
 
-        $this->load->helper('geral_helper'); // para o codigo puxar a funcao 
+        $this->load->helper('geral_helper'); // para o codigo puxar a funcao da helper
 
         $erros = []; // Cria um array para armazenar possíveis erros durante o processo
         $sucesso = false; // Variável booleana que indicará se a operação foi bem-sucedida ou nao 
@@ -214,7 +214,51 @@ public M_sala $M_sala;
            
             echo json_encode($retorno);  // Converte o array PHP em formato JSON permitindo que o frontend receba os dados nas variaveis privadas
     }
-}  
+
+    public function consultar() { // Declara o método consultar (provavelmente de um controller)
+    // Atributos para controlar o status do método
+    $erros = []; // Array que vai armazenar possíveis erros
+    $sucesso = false; // Variável de controle para indicar se deu tudo certo
+
+        try { // Início do bloco try para capturar exceções
+
+            $json = file_get_contents('php://input'); // Lê o corpo da requisição (JSON enviado pelo frontend)
+            $resultado = json_decode($json); // Converte o JSON recebido em um objeto PHP
+
+            $lista = [ // Define os campos esperados do frontend com valores padrão
+                "codigo" => '0',
+                "descricao" => '0',
+                "andar" => '0',
+                "capacidade" => '0'
+            ];
+
+            if (verificarParametros($resultado, $lista) != 1) { // Verifica se os parâmetros recebidos estão corretos
+                // Validar vindos de forma correta do frontend (Helper)
+                $erros[] = ['codigo' => 99, 'msg' => 'Campos inexistentes ou incorretos no FrontEnd.']; 
+                // Adiciona erro caso os parâmetros estejam errados ou faltando
+            } else {
+
+                // Validar campos quanto ao tipo de dado e tamanho (Helper)
+
+                $retornoCodigo = validarDadosConsulta($resultado->codigo, 'int'); 
+                // Valida se "codigo" é um número inteiro válido
+
+                $retornoDescricao = validarDadosConsulta($resultado->descricao, 'string'); 
+                // Valida se "descricao" é uma string válida (não vazia)
+
+                $retornoAndar = validarDadosConsulta($resultado->andar, 'int'); 
+                // Valida se "andar" é um número inteiro válido
+
+                $retornoCapacidade = validarDadosConsulta($resultado->capacidade, 'int'); 
+                // Valida se "capacidade" é um número inteiro válido
+            }
+
+        } catch (Exception $e) { // Captura qualquer erro/exceção durante a execução
+            $erros[] = ['codigo' => 500, 'msg' => $e->getMessage()]; 
+            // Armazena o erro com a mensagem da exceção
+        }
+}
+}   
 ?>
 
 

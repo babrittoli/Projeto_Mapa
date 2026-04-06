@@ -4,8 +4,8 @@
     defined('BASEPATH') or exit('Acesso ao script não permitido');
 
     // Criando a função pra validar se os parâmetros que vêm do Front estão corretos
-    // $atributos → são os dados que chegaram 
-    // $lista → são os campos que eu espero receber (tipo: nome, email, etc, que tenho lá no front)
+    // $atributos: são os dados que chegaram 
+    // $lista: são os campos que eu espero receber (tipo: nome, email, etc, que tenho lá no front)
     function verificarParametros($atributos, $lista){
 
         // Aqui eu percorro todos os campos que eu estou esperando
@@ -43,9 +43,9 @@
     }
 
     // Definindo a funcao chamada validarDados
-    // a função recebe: $valor → o dado que será validado
-    // $tipo → o tipo esperado (int, string, date, hora)
-    // $tamanhoZero → define se o valor 0 deve ser considerado inválido (true (verdadeiro) por padrão)
+    // a função recebe: $valor  que será validado
+    // $tipo: o tipo esperado (int, string, date, hora)
+    // $tamanhoZero: define se o valor 0 deve ser considerado inválido (true (verdadeiro) por padrão)
     function validarDados($valor, $tipo, $tamanhoZero = true) {
 
         // Verifica se o valor é nulo ou vazio
@@ -118,4 +118,55 @@
         // Se passou por tudo sem erro, retorna sucesso
         return array('codigoHelper' => 0, 'msg' => 'Validação correta.');
     }
+
+    // Função para verificar os tipos de dados para Consulta
+    function validarDadosConsulta($valor, $tipo) { // Define a função que recebe um valor e o tipo esperado
+
+        if ($valor != '') { // Verifica se o valor não está vazio
+            switch ($tipo) { // Escolhe o tipo de validação com base no tipo informado
+
+                case 'int': // Caso o tipo seja inteiro
+                    // Filtra como inteiro, aceita '123' ou 123
+                    if (filter_var($valor, FILTER_VALIDATE_INT) === false) { // Valida se é um inteiro válido
+                        return array('codigoHelper' => 4, 'msg' => 'Conteúdo não inteiro.'); // Retorna erro se não for inteiro
+                    }
+                    break; // Encerra o case
+
+                case 'string': // Caso o tipo seja string
+                    // Garante que é string não vazia após trim
+                    if (!is_string($valor) || trim($valor) === '') { // Verifica se é string e não está vazia após remover espaços
+                        return array('codigoHelper' => 5, 'msg' => 'Conteúdo não é um texto.'); // Retorna erro se inválido
+                    }
+                    break; // Encerra o case
+
+                case 'date': // Caso o tipo seja data
+                    // Verifico se tem padrão de data
+                    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $valor, $match)) { // Verifica formato YYYY-MM-DD com regex
+                        return array('codigoHelper' => 6, 'msg' => 'Data em formato inválido.'); // Retorna erro se formato estiver errado
+                    } else {
+                        // Tenta criar DateTime no formato Y-m-d
+                        $d = DateTime::createFromFormat('Y-m-d', $valor); // Cria objeto DateTime com o valor informado
+
+                        if (($d->format('Y-m-d') !== $valor) || $d === false) { // Confere se a data gerada é igual à original
+                            return array('codigoHelper' => 6, 'msg' => 'Data inválida.'); // Retorna erro se a data não for válida
+                        }
+                    }
+                    break; // Encerra o case
+
+                case 'hora': // Caso o tipo seja hora
+                    // Verifico se tem padrão de hora
+                    if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $valor)) { // Valida formato HH:MM (00:00 até 23:59)
+                        return array('codigoHelper' => 7, 'msg' => 'Hora em formato inválido.'); // Retorna erro se inválido
+                    }
+                    break; // Encerra o case
+
+                default: // Caso o tipo não seja reconhecido
+                    return array('codigoHelper' => 97, 'msg' => 'Tipo de dado não definido.'); // Retorna erro de tipo desconhecido
+            }
+        }
+
+        // Valor default da variável retorno caso não ocorra erro
+        return array('codigoHelper' => 0, 'msg' => 'Validação correta.'); // Retorna sucesso
+    }    
+    
 ?>
